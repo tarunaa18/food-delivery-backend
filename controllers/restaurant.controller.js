@@ -1,45 +1,82 @@
 import Restaurant from "../models/restaurant.models.js";
+//import { v2 as cloudinary } from "cloudinary";
+//import cloudinary from "./config/cloudinary.js";
+import cloudinary from "../config/cloudinary.js";
+import fs from "fs";
+
+// 🟢 CLOUDINARY CONFIG (same file style like your minor project)
+/*cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});*/
 
 // 🟢 ADD RESTAURANT
 export const addRestaurant = async (req, res) => {
   try {
-    const { name, address, rating, image } = req.body;
+    const { name, address, rating } = req.body;
 
+    // 1️⃣ Validation
+    if (!name || !address) {
+      return res.status(400).json({
+        success: false,
+        message: "Name and address are required",
+      });
+    }
+
+    // 2️⃣ Check file
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "Restaurant image is required",
+      });
+    }
+
+    // 3️⃣ Upload to Cloudinary (same pattern as your post project)
+    const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+      folder: "food_restaurants",
+    });
+
+    // 4️⃣ Delete local file
+    fs.unlinkSync(req.file.path);
+
+    // 5️⃣ Save to DB
     const restaurant = await Restaurant.create({
       name,
       address,
       rating,
-      image
+      image: uploadResult.secure_url,
     });
 
-    res.status(201).json({
+    // 6️⃣ Response
+    return res.status(201).json({
       success: true,
-      message: "Restaurant added",
-      data: restaurant
+      message: "Restaurant added successfully",
+      data: restaurant,
     });
 
   } catch (error) {
-    res.status(500).json({
+    console.error("ADD RESTAURANT ERROR:", error);
+
+    return res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 };
-
-// 🔵 GET ALL RESTAURANTS
 export const getRestaurants = async (req, res) => {
   try {
     const restaurants = await Restaurant.find();
 
-    res.json({
+    return res.status(200).json({
       success: true,
-      data: restaurants
+      data: restaurants,
     });
 
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 };

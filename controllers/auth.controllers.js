@@ -115,11 +115,11 @@ export const registerUser = async (req, res) => {
     });
 
     // 🔑 Generate token
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      "secretkey",
-      { expiresIn: "1d" }
-    );
+    jwt.sign(
+  { id: user._id, role: user.role },
+  process.env.JWT_SECRET,
+  { expiresIn: "1d" }
+);
 
     // ✅ Send response (frontend-friendly)
     res.status(201).json({
@@ -171,10 +171,10 @@ export const loginUser = async (req, res) => {
 
     // 🔑 Generate token
     const token = jwt.sign(
-      { id: user._id, role: user.role },
-      "secretkey",
-      { expiresIn: "1d" }
-    );
+  { id: user._id, role: user.role },
+  process.env.JWT_SECRET,
+  { expiresIn: "1d" }
+);
 
     // ✅ Send response
     res.status(200).json({

@@ -1,13 +1,14 @@
 import multer from "multer";
-import { CloudinaryStorage } from "multer-storage-cloudinary";
-import cloudinary from "../config.cloudinary.js";
+//import path from "path";
 
-const storage = new CloudinaryStorage({
-  cloudinary,
-  params: {
-    folder: "food-delivery",
-    allowed_formats: ["jpg", "png", "jpeg"]
-  }
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "public/temp"); // your folder
+  },
+
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + "-" + file.originalname);
+  },
 });
 
 const upload = multer({ storage });

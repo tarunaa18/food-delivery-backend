@@ -11,12 +11,17 @@ import foodRoutes from "./routes/food.routes.js";
 const app = express();
 
 // ✅ CLEAN CORS (same as your other project)
-app.use(
+/*app.use(
   cors({
     origin: [process.env.dev_cors_origin, process.env.prod_cors_origin],
     credentials: true,
   })
-);
+);*/
+app.use(cors(
+  {
+  credentials: true,
+}
+));
 
 
 // Middlewares

@@ -17,11 +17,16 @@ const app = express();
     credentials: true,
   })
 );*/
-app.use(cors(
+/*app.use(cors(
+
   {
   credentials: true,
 }
-));
+));*/
+app.use(cors({
+  origin: "true", // frontend URL
+  credentials: true
+}));
 
 
 // Middlewares

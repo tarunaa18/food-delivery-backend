@@ -6,7 +6,7 @@ import "./config/cloudinary.js"; // init after env
 
 const PORT = process.env.PORT || 5000;
 
-console.log("CLOUDINARY KEY:", process.env.CLOUDINARY_API_KEY);
+//console.log("CLOUDINARY KEY:", process.env.CLOUDINARY_API_KEY);
 
 connectDB()
   .then(() => {

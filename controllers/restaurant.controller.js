@@ -1,22 +1,21 @@
 import Restaurant from "../models/restaurant.models.js";
-//import { v2 as cloudinary } from "cloudinary";
-//import cloudinary from "./config/cloudinary.js";
 import cloudinary from "../config/cloudinary.js";
 import fs from "fs";
 
-// 🟢 CLOUDINARY CONFIG (same file style like your minor project)
-/*cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});*/
-
-// 🟢 ADD RESTAURANT
+// 🟢 ADD RESTAURANT (ADMIN ONLY)
 export const addRestaurant = async (req, res) => {
   try {
+    // 🔐 0. Role Check (IMPORTANT)
+    if (!req.user || req.user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Admin only.",
+      });
+    }
+
     const { name, address, rating } = req.body;
 
-    // 1️⃣ Validation
+    // ✅ 1. Validation
     if (!name || !address) {
       return res.status(400).json({
         success: false,
@@ -24,7 +23,15 @@ export const addRestaurant = async (req, res) => {
       });
     }
 
-    // 2️⃣ Check file
+    // ✅ 2. Rating validation
+    if (rating && (rating < 0 || rating > 5)) {
+      return res.status(400).json({
+        success: false,
+        message: "Rating must be between 0 and 5",
+      });
+    }
+
+    // ✅ 3. File check
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -32,23 +39,34 @@ export const addRestaurant = async (req, res) => {
       });
     }
 
-    // 3️⃣ Upload to Cloudinary (same pattern as your post project)
-    const uploadResult = await cloudinary.uploader.upload(req.file.path, {
-      folder: "food_restaurants",
+    let uploadResult;
+
+    // ✅ 4. Upload to Cloudinary safely
+    try {
+      uploadResult = await cloudinary.uploader.upload(req.file.path, {
+        folder: "food_restaurants",
+      });
+    } catch (err) {
+      fs.unlink(req.file.path, () => {});
+      throw err;
+    }
+
+    // ✅ 5. Delete local file (safe)
+    fs.unlink(req.file.path, (err) => {
+      if (err) console.log("File delete error:", err);
     });
 
-    // 4️⃣ Delete local file
-    fs.unlinkSync(req.file.path);
-
-    // 5️⃣ Save to DB
+    // ✅ 6. Save to DB
+   
     const restaurant = await Restaurant.create({
-      name,
-      address,
-      rating,
-      image: uploadResult.secure_url,
-    });
+  name,
+  address,
+  rating,
+  image: uploadResult.secure_url,
+  owner: req.user.id,
+});
 
-    // 6️⃣ Response
+    // ✅ 7. Response
     return res.status(201).json({
       success: true,
       message: "Restaurant added successfully",
@@ -64,9 +82,14 @@ export const addRestaurant = async (req, res) => {
     });
   }
 };
+
+
+// 🟢 GET RESTAURANTS
 export const getRestaurants = async (req, res) => {
   try {
-    const restaurants = await Restaurant.find();
+    const restaurants = await Restaurant.find()
+      .select("name address rating image")
+      .sort({ createdAt: -1 });
 
     return res.status(200).json({
       success: true,

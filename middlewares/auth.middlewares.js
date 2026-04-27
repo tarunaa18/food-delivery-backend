@@ -84,6 +84,7 @@ export const verifyJWT = async (req, res, next) => {
     }
 
     req.user = user;
+   //req.user = decoded;
     next();
 
   } catch (error) {

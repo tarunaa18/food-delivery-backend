@@ -15,7 +15,11 @@ const restaurantSchema = new mongoose.Schema({
   },
   image: {
     type: String
-  }
+  },
+  owner: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "User",
+}
 }, { timestamps: true });
 
 export default mongoose.model("Restaurant", restaurantSchema);

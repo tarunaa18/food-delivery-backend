@@ -1,29 +1,31 @@
 
-
 import Order from "../models/order.models.js";
 
-// 🟢 PLACE ORDER
-export const placeOrder = async (req, res) => {
+// 🟢 CREATE ORDER
+export const createOrder = async (req, res) => {
   try {
-    const { items, totalPrice } = req.body;
+    const { items, restaurant, totalAmount, deliveryAddress } = req.body;
 
-    if (!items || items.length === 0) {
+    // basic validation
+    if (!items || !restaurant || !totalAmount || !deliveryAddress) {
       return res.status(400).json({
         success: false,
-        message: "No items in order"
+        message: "All fields are required"
       });
     }
 
     const order = await Order.create({
-      user: req.user._id,
+      user: req.user._id, // comes from auth middleware
       items,
-      totalPrice
+      restaurant,
+      totalAmount,
+      deliveryAddress
     });
 
     res.status(201).json({
       success: true,
       message: "Order placed successfully",
-      data: order
+      order
     });
 
   } catch (error) {
@@ -33,17 +35,18 @@ export const placeOrder = async (req, res) => {
     });
   }
 };
-
 
 // 🟢 GET MY ORDERS
 export const getMyOrders = async (req, res) => {
   try {
     const orders = await Order.find({ user: req.user._id })
-      .populate("items.food");
+      .populate("items.food")
+      .populate("restaurant")
+      .sort({ createdAt: -1 });
 
     res.json({
       success: true,
-      data: orders
+      orders
     });
 
   } catch (error) {
@@ -53,18 +56,13 @@ export const getMyOrders = async (req, res) => {
     });
   }
 };
-
 
 // 🟢 UPDATE ORDER STATUS
 export const updateOrderStatus = async (req, res) => {
   try {
     const { status } = req.body;
 
-    const order = await Order.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { new: true }
-    );
+    const order = await Order.findById(req.params.id);
 
     if (!order) {
       return res.status(404).json({
@@ -73,10 +71,14 @@ export const updateOrderStatus = async (req, res) => {
       });
     }
 
+    order.status = status;
+
+    await order.save();
+
     res.json({
       success: true,
       message: "Order status updated",
-      data: order
+      order
     });
 
   } catch (error) {

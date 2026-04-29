@@ -1,25 +1,58 @@
 import mongoose from "mongoose";
 
-const orderSchema = new mongoose.Schema({
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User"
-  },
-  items: [
-    {
-      food: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Food"
-      },
-      quantity: Number
-    }
-  ],
-  totalPrice: Number,
-  status: {
-    type: String,
-    enum: ["placed", "preparing", "out_for_delivery", "delivered"],
-    default: "placed"
-  }
-}, { timestamps: true });
+const orderSchema = new mongoose.Schema(
+  {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true
+    },
 
-export default mongoose.model("Order", orderSchema);
+    restaurant: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Restaurant",
+      required: true
+    },
+
+    items: [
+      {
+        food: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Food"
+        },
+        quantity: {
+          type: Number,
+          required: true
+        }
+      }
+    ],
+
+    totalAmount: {
+      type: Number,
+      required: true
+    },
+
+    deliveryAddress: {
+      type: String,
+      required: true
+    },
+
+    status: {
+      type: String,
+      enum: [
+        "placed",
+        "accepted",
+        "preparing",
+        "out_for_delivery",
+        "delivered",
+        "cancelled"
+      ],
+      default: "placed"
+    }
+  },
+  { timestamps: true }
+);
+
+const Order = mongoose.model("Order", orderSchema);
+
+export default Order;

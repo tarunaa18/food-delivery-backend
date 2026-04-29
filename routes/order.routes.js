@@ -1,21 +1,18 @@
 import express from "express";
-import {
-  placeOrder,
-  getMyOrders,
-  updateOrderStatus
-} from "../controllers/order.controllers.js";
-
+import { createOrder, getMyOrders,updateOrderStatus} from "../controllers/order.controllers.js";
 import { verifyJWT } from "../middlewares/auth.middlewares.js";
 
 const router = express.Router();
 
-// Place order
-router.post("/", verifyJWT, placeOrder);
+// 🟢 Create Order
+router.post("/", verifyJWT, createOrder);
 
-// Get logged-in user's orders
+
+// Get My Orders
 router.get("/my", verifyJWT, getMyOrders);
 
-// Update order status
-router.put("/:id", verifyJWT, updateOrderStatus);
+
+// 🟢 Update Order Status (for restaurant and delivery person )
+router.put("/:orderId/status", verifyJWT, updateOrderStatus);
 
 export default router;

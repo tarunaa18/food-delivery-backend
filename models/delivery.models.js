@@ -1,23 +1,44 @@
 import mongoose from "mongoose";
 
-const deliverySchema = new mongoose.Schema({
-  orderId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Order"
-  },
-  agentId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User"
-  },
-  currentLocation: {
-    lat: Number,
-    lng: Number
-  },
-  status: {
-    type: String,
-    enum: ["Assigned", "Picked", "On the Way", "Delivered"],
-    default: "Assigned"
-  }
-}, { timestamps: true });
+const deliverySchema = new mongoose.Schema(
+  {
+    orderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Order",
+      required: true
+    },
 
-export default mongoose.model("Delivery", deliverySchema);
+    deliveryAgentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true
+    },
+
+    currentLocation: {
+      lat: {
+        type: Number,
+        default: 0
+      },
+      lng: {
+        type: Number,
+        default: 0
+      }
+    },
+
+    status: {
+      type: String,
+      enum: [
+        "assigned",
+        "picked_up",
+        "out_for_delivery",
+        "delivered"
+      ],
+      default: "assigned"
+    }
+  },
+  { timestamps: true }
+);
+
+const Delivery = mongoose.model("Delivery", deliverySchema);
+
+export default Delivery;

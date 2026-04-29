@@ -3,108 +3,160 @@ import Restaurant from "../models/restaurant.models.js";
 import cloudinary from "../config/cloudinary.js";
 import fs from "fs";
 
-// 🟢 ADD FOOD (ADMIN ONLY)
 export const addFood = async (req, res) => {
   try {
-    // 🔐 1. Admin check
-    if (!req.user || req.user.role !== "admin") {
-      return res.status(403).json({
-        success: false,
-        message: "Access denied. Admin only.",
-      });
-    }
+    const { name, price, description, restaurantId } = req.body;
 
-    const { name, price, description } = req.body;
-
-    // ✅ 2. Validation
-    if (!name || !price) {
-      return res.status(400).json({
-        success: false,
-        message: "Name and price are required",
-      });
-    }
-
-    // 🔍 3. Get admin's restaurant
-    const restaurant = await Restaurant.findOne({ owner: req.user.id });
+    // 🔐 check restaurant exists & belongs to user
+    const restaurant = await Restaurant.findOne({
+      _id: restaurantId,
+      owner: req.user._id,
+    });
 
     if (!restaurant) {
-      return res.status(404).json({
+      return res.status(403).json({
         success: false,
-        message: "No restaurant found for this admin",
+        message: "Not authorized for this restaurant",
       });
     }
 
-    // ☁️ 4. Upload image to Cloudinary
-    let imageUrl = "";
-
-    if (req.file) {
-      try {
-        const upload = await cloudinary.uploader.upload(req.file.path, {
-          folder: "food_items",
-        });
-
-        imageUrl = upload.secure_url;
-
-        // 🗑️ delete temp file
-        fs.unlink(req.file.path, () => {});
-      } catch (err) {
-        fs.unlink(req.file.path, () => {});
-        throw err;
-      }
+    // 📸 image required
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "Food image is required",
+      });
     }
 
-    // 🆕 5. Create food item
+    // upload image
+    const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+      folder: "food_items",
+    });
+
+    fs.unlink(req.file.path, () => {});
+
     const food = await Food.create({
       name,
       price,
       description,
-      image: imageUrl,
-      restaurantId: restaurant._id,
+      image: uploadResult.secure_url,
+      restaurantId,
     });
 
-    // ✅ 6. Response
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
-      message: "Food item added successfully",
+      message: "Food added successfully",
       data: food,
     });
 
   } catch (error) {
-    console.error("ADD FOOD ERROR:", error);
-
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: error.message || "Server Error",
+      message: error.message,
     });
   }
 };
-
-
-// 🔵 GET FOOD BY RESTAURANT
 export const getFoodByRestaurant = async (req, res) => {
   try {
     const { restaurantId } = req.params;
 
-    if (!restaurantId) {
-      return res.status(400).json({
-        success: false,
-        message: "Restaurant ID is required",
-      });
-    }
-
     const foods = await Food.find({ restaurantId });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       data: foods,
     });
 
   } catch (error) {
-    console.error("GET FOOD ERROR:", error);
-
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: error.message || "Server Error",
+      message: error.message,
+    });
+  }
+};
+export const updateFood = async (req, res) => {
+  try {
+    const { foodId } = req.params;
+    const { name, price, description, isAvailable } = req.body;
+
+    const food = await Food.findById(foodId);
+
+    if (!food) {
+      return res.status(404).json({
+        success: false,
+        message: "Food not found",
+      });
+    }
+
+    // check restaurant ownership
+    const restaurant = await Restaurant.findOne({
+      _id: food.restaurantId,
+      owner: req.user._id,
+    });
+
+    if (!restaurant) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized",
+      });
+    }
+
+    food.name = name || food.name;
+    food.price = price || food.price;
+    food.description = description || food.description;
+    food.isAvailable = isAvailable ?? food.isAvailable;
+
+    await food.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Food updated successfully",
+      data: food,
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+export const deleteFood = async (req, res) => {
+  try {
+    const { foodId } = req.params;
+
+    const food = await Food.findById(foodId);
+
+    if (!food) {
+      return res.status(404).json({
+        success: false,
+        message: "Food not found",
+      });
+    }
+
+    const restaurant = await Restaurant.findOne({
+      _id: food.restaurantId,
+      owner: req.user._id,
+    });
+
+    if (!restaurant) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized",
+      });
+    }
+
+    await food.deleteOne();
+
+    return res.status(200).json({
+      success: true,
+      message: "Food deleted successfully",
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
     });
   }
 };

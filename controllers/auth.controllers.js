@@ -28,17 +28,27 @@ export const registerUser = async (req, res) => {
       role,
     });
 
-    // 🔑 Generate token (Fixed: added 'const token =')
-/*    const token = jwt.sign(
-  { _id: user._id }, // ✅ This must match decoded._id in your middleware
-  process.env.JWT_SECRET,
-  { expiresIn: '7d' }
-);*/
-const token = jwt.sign(
-  { id: user._id, role: user.role },
-  process.env.JWT_SECRET,
-  { expiresIn: "1d" }
-);
+    let restaurantId = null;
+
+    // 🏪 CREATE RESTAURANT ONLY IF ADMIN
+    if (role === "admin") {
+      const restaurant = await Restaurant.create({
+        name: `${name}'s Restaurant`,
+        address: "Not provided",
+        rating: 0,
+        image: "",
+        owner: user._id,
+      });
+
+      restaurantId = restaurant._id;
+    }
+
+    // 🔑 Generate token
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
 
     // ✅ Send response
     res.status(201).json({
@@ -50,6 +60,7 @@ const token = jwt.sign(
         name: user.name,
         email: user.email,
         role: user.role,
+        restaurantId, // 🔥 important
       },
     });
 
@@ -62,13 +73,11 @@ const token = jwt.sign(
     });
   }
 };
-
-// 🟢 LOGIN USER
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // 🔍 Check user exists
+    // 🔍 Check user
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({
@@ -77,7 +86,7 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // 🔐 Compare password
+    // 🔐 Check password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({
@@ -86,41 +95,41 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // 🔑 Generate token
+    // 🔑 Token
     const token = jwt.sign(
-      { id: user._id, role: user.role },
+      { id: user._id },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
+
+    // 🏪 Check if this user owns a restaurant
+    const restaurant = await Restaurant.findOne({ owner: user._id });
+
     let restaurantId = null;
 
-if (user.role === "admin") {
-  const restaurant = await Restaurant.findOne({ owner: user._id });
-  if (restaurant) {
-    restaurantId = restaurant._id;
-  }
-}
+    if (restaurant) {
+      restaurantId = restaurant._id;
+    }
 
-    // ✅ Send response
-   res.status(200).json({
-  success: true,
-  message: "Login successful",
-  token,
-  user: {
-    _id: user._id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    restaurantId, // 🔥 ADD THIS
-  },
-});
+    // ✅ Response
+    res.status(200).json({
+      success: true,
+      message: "Login successful",
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        restaurantId, // 🔥 this decides frontend page
+      },
+    });
 
   } catch (error) {
     console.error("LOGIN ERROR:", error);
 
     res.status(500).json({
       success: false,
-      message: error.message || "Server Error",
+      message: error.message,
     });
   }
 };

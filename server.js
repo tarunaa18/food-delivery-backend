@@ -7,6 +7,9 @@ import authRoutes from "./routes/user.routes.js";
 import orderRoutes from "./routes/order.routes.js";
 import restaurantRoutes from "./routes/restaurant.routes.js";
 import foodRoutes from "./routes/food.routes.js";
+import deliveryRoutes from "./routes/delivery.routes.js";
+
+
 
 const app = express();
 
@@ -27,5 +30,5 @@ app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/restaurants", restaurantRoutes);
 app.use("/api/v1/foods", foodRoutes);
 app.use("/api/v1/orders", orderRoutes);
-
+app.use("/api/delivery", deliveryRoutes);
 export { app };

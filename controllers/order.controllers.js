@@ -56,6 +56,38 @@ export const getMyOrders = async (req, res) => {
     });
   }
 };
+/*
+// 🟢 UPDATE ORDER STATUS
+export const updateOrderStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found"
+      });
+    }
+
+    order.status = status;
+
+    await order.save();
+
+    res.json({
+      success: true,
+      message: "Order status updated",
+      order
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};*/
 
 // 🟢 UPDATE ORDER STATUS
 export const updateOrderStatus = async (req, res) => {
@@ -74,6 +106,12 @@ export const updateOrderStatus = async (req, res) => {
     order.status = status;
 
     await order.save();
+
+    // ✅ get io
+    const io = req.app.get("io");
+
+    // 🔥 send update ONLY to this order room
+    io.to(order._id.toString()).emit("orderUpdated", order);
 
     res.json({
       success: true,

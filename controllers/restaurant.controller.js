@@ -103,7 +103,7 @@ export const getRestaurants = async (req, res) => {
     });
   }
 };*/
-
+/*
 import Restaurant from "../models/restaurant.models.js";
 import cloudinary from "../config/cloudinary.js";
 import fs from "fs";
@@ -167,6 +167,109 @@ export const updateRestaurant = async (req, res) => {
 
     if (lat && lng) {
       restaurant.location = { lat, lng };
+    }
+
+    await restaurant.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Restaurant updated successfully",
+      data: restaurant,
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+export const getRestaurants = async (req, res) => {
+  try {
+    const restaurants = await Restaurant.find()
+      .select("name address rating image")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      data: restaurants,
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+*/
+import Restaurant from "../models/restaurant.models.js";
+import cloudinary from "../config/cloudinary.js";
+import fs from "fs";
+export const getMyRestaurant = async (req, res) => {
+  try {
+    const restaurant = await Restaurant.findOne({ owner: req.user._id });
+
+    if (!restaurant) {
+      return res.status(404).json({
+        success: false,
+        message: "Restaurant not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: restaurant,
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+export const updateRestaurant = async (req, res) => {
+  try {
+    const { name, address, rating, lat, lng } = req.body;
+
+    const restaurant = await Restaurant.findOne({ owner: req.user._id });
+
+    if (!restaurant) {
+      return res.status(404).json({
+        success: false,
+        message: "Restaurant not found",
+      });
+    }
+
+    // 🖼️ IMAGE UPLOAD (only if new file is provided)
+    if (req.file) {
+      try {
+        const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+          folder: "food_restaurants",
+        });
+
+        restaurant.image = uploadResult.secure_url;
+
+        // delete local file after upload
+        fs.unlink(req.file.path, () => {});
+      } catch (err) {
+        fs.unlink(req.file.path, () => {});
+        throw err;
+      }
+    }
+
+    // 📝 update fields safely
+    restaurant.name = name || restaurant.name;
+    restaurant.address = address || restaurant.address;
+    restaurant.rating = rating ?? restaurant.rating;
+
+    // 🟢 IMPLEMENTATION: Convert coordinates to Numbers
+    if (lat && lng) {
+      restaurant.location = { 
+        lat: Number(lat), 
+        lng: Number(lng) 
+      };
     }
 
     await restaurant.save();

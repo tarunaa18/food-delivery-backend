@@ -19,8 +19,8 @@ connectDB()
   });*/
 
 
-  /*
-  import "dotenv/config";
+/*
+import "dotenv/config";
 import connectDB from "./db/connectDB.js";
 import { app } from "./server.js";
 import "./config/cloudinary.js";
@@ -30,14 +30,14 @@ const PORT = process.env.PORT || 3000;
 //console.log("CLOUDINARY KEY:", process.env.CLOUDINARY_API_KEY);
 
 connectDB()
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error("❌ DB connection failed:", err);
-  });*/
+.then(() => {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+  });
+})
+.catch((err) => {
+  console.error("❌ DB connection failed:", err);
+});*/
 /*
   import "dotenv/config";
 import connectDB from "./db/connectDB.js";
@@ -80,7 +80,7 @@ connectDB()
     console.error("❌ DB connection failed:", err);
   });*/
 
-  import "dotenv/config";
+import "dotenv/config";
 import connectDB from "./db/connectDB.js";
 import { app } from "./server.js";
 import "./config/cloudinary.js";
@@ -100,7 +100,10 @@ const io = new Server(server, {
     credentials: true
   }
 });
+
+
 app.set("io", io);
+
 // socket connection
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
@@ -131,4 +134,3 @@ connectDB()
   .catch((err) => {
     console.error("❌ DB connection failed:", err);
   });
-  

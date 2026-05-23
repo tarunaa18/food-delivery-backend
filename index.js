@@ -1,136 +1,75 @@
-/*import "dotenv/config"; // ONLY ONCE, FIRST LINE
+import "dotenv/config";
+
+import http from "http";
+import { Server } from "socket.io";
+
+import { app } from "./server.js";
 
 import connectDB from "./db/connectDB.js";
-import { app } from "./server.js";
-import "./config/cloudinary.js"; // init after env
+import "./config/cloudinary.js";
+
+import "./config/redis.js";
+import redisClient from "./config/redis.js";
 
 const PORT = process.env.PORT || 5000;
 
-//console.log("CLOUDINARY KEY:", process.env.CLOUDINARY_API_KEY);
-
-connectDB()
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error("❌ DB connection failed:", err);
-  });*/
-
-
-/*
-import "dotenv/config";
-import connectDB from "./db/connectDB.js";
-import { app } from "./server.js";
-import "./config/cloudinary.js";
-
-const PORT = process.env.PORT || 3000;
-
-//console.log("CLOUDINARY KEY:", process.env.CLOUDINARY_API_KEY);
-
-connectDB()
-.then(() => {
-  app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-  });
-})
-.catch((err) => {
-  console.error("❌ DB connection failed:", err);
-});*/
-/*
-  import "dotenv/config";
-import connectDB from "./db/connectDB.js";
-import { app } from "./server.js";
-import "./config/cloudinary.js";
-
-import http from "http";
-import { Server } from "socket.io";
-
-const PORT = process.env.PORT || 3000;
-
-// create server
+/* ---------------- HTTP SERVER ---------------- */
 const server = http.createServer(app);
 
-// attach socket
+/* ---------------- SOCKET.IO ---------------- */
 const io = new Server(server, {
-  cors: {
-    origin: "http://localhost:5173",
-    credentials: true
-  }
+    cors: {
+        origin: "http://localhost:5173",
+        credentials: true,
+    },
 });
-
-// socket connection
-io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
-
-  socket.on("disconnect", () => {
-    console.log("User disconnected");
-  });
-});
-
-// DB + server start
-connectDB()
-  .then(() => {
-    server.listen(PORT, () => {
-      console.log(`🚀 Server running with Socket.IO on port ${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error("❌ DB connection failed:", err);
-  });*/
-
-import "dotenv/config";
-import connectDB from "./db/connectDB.js";
-import { app } from "./server.js";
-import "./config/cloudinary.js";
-
-import http from "http";
-import { Server } from "socket.io";
-
-const PORT = process.env.PORT || 3000;
-
-// create server
-const server = http.createServer(app);
-
-// attach socket
-const io = new Server(server, {
-  cors: {
-    origin: "http://localhost:5173",
-    credentials: true
-  }
-});
-
 
 app.set("io", io);
 
-// socket connection
+/* ---------------- LIVE TRACKING ---------------- */
 io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
+    console.log("User connected:", socket.id);
 
-  // join room (using any id you pass from frontend)
-  socket.on("joinRoom", (roomId) => {
-    socket.join(roomId);
-    console.log(`Socket ${socket.id} joined room: ${roomId}`);
-  });
+    socket.on("joinRoom", (roomId) => {
+        socket.join(roomId);
+    });
 
-  // send live data (location / message etc.)
-  socket.on("sendData", ({ roomId, data }) => {
-    io.to(roomId).emit("receiveData", data);
-  });
+    socket.on("sendLocation", async ({ driverId, orderId, lat, lng }) => {
+        try {
+            await redisClient.set(
+                `driver:${driverId}:location`,
+                JSON.stringify({
+                    lat,
+                    lng,
+                    updatedAt: Date.now(),
+                })
+            );
 
-  socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id);
-  });
+            io.to(orderId).emit("driverLocationUpdate", {
+                driverId,
+                orderId,
+                lat,
+                lng,
+                updatedAt: Date.now(),
+            });
+
+        } catch (err) {
+            console.log("Location error:", err);
+        }
+    });
+
+    socket.on("disconnect", () => {
+        console.log("User disconnected:", socket.id);
+    });
 });
 
-// DB + server start
+/* ---------------- START SERVER ---------------- */
 connectDB()
-  .then(() => {
-    server.listen(PORT, () => {
-      console.log(`🚀 Server running with Socket.IO on port ${PORT}`);
+    .then(() => {
+        server.listen(PORT, "0.0.0.0", () => {
+            console.log(`🚀 Server running on port ${PORT}`);
+        });
+    })
+    .catch((err) => {
+        console.error("DB Error:", err);
     });
-  })
-  .catch((err) => {
-    console.error("❌ DB connection failed:", err);
-  });
